@@ -1,0 +1,13 @@
+checks:
+
+  - column: name
+    type: not_null
+
+  - column: email
+    type: email
+
+  - column: salary
+    type: positive
+
+  - column: email
+    type: unique
