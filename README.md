@@ -25,17 +25,21 @@ Team 7
 
 # 🌐 Deliverable Links
 
-### Public GitHub Repository
+### Live Deployment Link
 
-GitHub Link:
+Deployed Link :
 
-[To be Added After Repository Creation]
+https://data-quality-agent-s2eccxu2aus43cvgvpphwu.streamlit.app
 
 ### Demo Video
 
 Demo Link:
 
-[To be Added After Recording]
+https://www.loom.com/share/ca882d867af54f2dbd82d156ed621259
+
+### GitHub Repository
+
+https://github.com/DineshRam0127/Data-Quality-Agent
 
 ---
 
@@ -173,7 +177,7 @@ DataQualityAgent/
 ## Clone Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/DineshRam0127/Data-Quality-Agent.git
 ```
 
 ## Navigate to Project Folder
@@ -397,7 +401,7 @@ email contains duplicates
 
 Demo Link:
 
-[To be Added After Recording]
+https://www.loom.com/share/ca882d867af54f2dbd82d156ed621259
 
 The demonstration video includes:
 
@@ -420,6 +424,6 @@ Data Quality Agent successfully automates dataset validation and cleaning proces
 
 # 👨‍💻 Developed By
 
-Team 7 – Infinite Solutions
+Team number - 7
 
 Project: Data Quality Agent
