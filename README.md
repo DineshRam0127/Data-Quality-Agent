@@ -21,6 +21,13 @@ Team 7
 * Dhivya P
 * Divya N
 
+### Team Members Resumes
+
+1. Dinesh Ram R - [text](<Resumes/Dinesh ram R 23IT012.pdf>)
+2. Dharun Adithya R - [text](<Resumes/Dharun Adithya R 23CC010.pdf>)
+3. Dhivya P - [text](<Resumes/Dhivya P 23AD036.pdf>)
+4. Divya N - [text](<Resumes/DIVYA N_23AD037.pdf>)
+
 ---
 
 # 🌐 Deliverable Links
