@@ -14,6 +14,10 @@ from auth.database import (
 from agent.autofix import auto_fix
 from agent.validator import validate
 from agent.llm_helper import generate_fix
+from agent.ai_summary import generate_dataset_summary
+from agent.ai_chat import ask_dataset_question
+from agent.quality_score import calculate_quality_score
+from agent.ai_insights import generate_root_cause_analysis
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -460,7 +464,7 @@ elif st.session_state.page == "signup":
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# DASHBOARD (untouched)
+# DASHBOARD
 # ══════════════════════════════════════════════════════════════════════════════
 if st.session_state.logged_in:
 
@@ -505,13 +509,90 @@ if st.session_state.logged_in:
         with open("rules/checks.yaml", "r") as f:
             rules = yaml.safe_load(f)
         failures = validate(df, rules)
+        
+        # Generate root cause analysis
+        root_cause_analysis = generate_root_cause_analysis(df, failures)
+        
+        # Calculate quality scores
+        scores = calculate_quality_score(df, failures)
+        
+        ai_summary = generate_dataset_summary(
+            df,
+            failures,
+            scores
+        )
 
         metric_cards(len(df), len(df.columns), len(failures))
 
+        # Data Quality Score card
+        card_open("📈", "Data Quality Score")
+        
+        st.metric(
+            "Overall Quality Score",
+            f"{scores['overall']}/100"
+        )
+        
+        st.progress(scores["overall"] / 100)
+        
+        c1, c2, c3, c4 = st.columns(4)
+        
+        c1.metric(
+            "Completeness",
+            f"{scores['completeness']}%"
+        )
+        
+        c2.metric(
+            "Validity",
+            f"{scores['validity']}%"
+        )
+        
+        c3.metric(
+            "Uniqueness",
+            f"{scores['uniqueness']}%"
+        )
+        
+        c4.metric(
+            "Consistency",
+            f"{scores['consistency']}%"
+        )
+        
+        card_close()
+
+        # AI Data Quality Summary card
+        card_open("🤖", "AI Data Quality Summary")
+        st.info(ai_summary)
+        card_close()
+
+        # AI Root Cause & Business Impact card
+        card_open("🚨", "AI Root Cause & Business Impact")
+        st.markdown(root_cause_analysis)
+        card_close()
+
+        # Ask AI About Your Dataset card
+        card_open("💬", "Ask AI About Your Dataset")
+        question = st.text_input(
+            "Ask a question",
+            placeholder="Which column has the most errors?"
+        )
+        if st.button(
+            "Ask AI",
+            key="ask_ai_btn"
+        ):
+            if question:
+                with st.spinner("AI is analyzing dataset..."):
+                    answer = ask_dataset_question(
+                        df,
+                        question
+                    )
+                    st.markdown(answer)
+        card_close()
+
+        # Dataset Preview card
         card_open("📄", "Dataset Preview")
         st.dataframe(df, use_container_width=True)
         card_close()
 
+        # Validation Report card
         card_open("📊", "Validation Report")
         if not failures:
             st.success("✅ No issues found — your dataset looks clean!")
@@ -532,6 +613,7 @@ if st.session_state.logged_in:
                     st.code(generate_fix(failure["issue"]), language="python")
         card_close()
 
+        # Auto Fix card
         card_open("🛠", "Auto Fix")
         if st.button("Fix Dataset", use_container_width=False):
             fixed_df = auto_fix(df.copy())
