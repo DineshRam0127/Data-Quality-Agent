@@ -42,7 +42,7 @@ https://data-quality-agent-s2eccxu2aus43cvgvpphwu.streamlit.app
 
 Demo Link:
 
-https://www.loom.com/share/ca882d867af54f2dbd82d156ed621259
+https://www.loom.com/share/b9ee1f37ca344619934d50513f135f1c
 
 ### GitHub Repository
 
