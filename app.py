@@ -363,6 +363,7 @@ if not st.session_state.logged_in and st.session_state.page == "login":
     # Logic
     if login_clicked:
         if verify_user(email, password):
+            st.session_state.pop("selected_upload", None)
             for k in ["login_email", "login_password"]:
                 st.session_state.pop(k, None)
             st.session_state.logged_in  = True
@@ -468,34 +469,85 @@ elif st.session_state.page == "signup":
 # ══════════════════════════════════════════════════════════════════════════════
 if st.session_state.logged_in:
 
+    # =========================
+    # SIDEBAR
+    # =========================
     with st.sidebar:
+
         st.markdown("""
         <div class="sidebar-brand">
-          <div class="icon">✦</div>
-          <div class="name">DQ Agent</div>
+            <div class="icon">✦</div>
+            <div class="name">DQ Agent</div>
         </div>
         """, unsafe_allow_html=True)
+
         st.markdown(
-            f'<div class="user-pill">📧 {st.session_state.get("user_email","")}</div>',
-            unsafe_allow_html=True,
+            f'<div class="user-pill">{st.session_state.user_email}</div>',
+            unsafe_allow_html=True
         )
-        if st.button("Logout", use_container_width=True):
+
+        st.markdown("---")
+
+        st.markdown("### 📜 History")
+
+        history = get_history(st.session_state.user_email)
+
+        if history:
+
+          for row in history:
+
+             upload_id = row[0]
+             file_name = row[2]
+
+             if st.button(
+                f"📄 {file_name}",
+                key=f"history_{upload_id}",
+                use_container_width=True
+        ):
+                st.session_state.selected_upload = upload_id
+                st.rerun()
+
+        else:
+           st.info("No files uploaded")
+
+        st.markdown("---")
+
+        if st.button(
+            "Logout",
+            use_container_width=True
+        ):
+            st.session_state.pop("selected_upload", None)
             st.session_state.logged_in = False
-            st.session_state.page      = "login"
+            st.session_state.page = "login"
             st.rerun()
 
+    # =========================
+    # MAIN PAGE
+    # =========================
+
     st.markdown("## ✦ Data Quality Agent")
-    st.caption("Upload a CSV, detect issues, and auto-fix your dataset.")
+    st.caption(
+        "Upload a CSV, detect issues, and auto-fix your dataset."
+    )
     st.divider()
 
     uploaded_file = st.file_uploader("Upload CSV file", type=["csv"], label_visibility="collapsed")
 
     if uploaded_file:
 
-        if st.session_state.get("last_file") != uploaded_file.name:
-            st.session_state.last_file = uploaded_file.name
-            for k in ["upload_id", "validation_saved", "clean_saved"]:
-                st.session_state.pop(k, None)
+        if uploaded_file:
+
+             st.session_state.pop("selected_upload", None)
+
+             if st.session_state.get("last_file") != uploaded_file.name:
+                st.session_state.last_file = uploaded_file.name
+
+                for k in [
+                   "upload_id",
+                   "validation_saved",
+                   "clean_saved"
+        ]:
+                   st.session_state.pop(k, None)
 
         if "upload_id" not in st.session_state:
             upload_id = save_upload(st.session_state.user_email, uploaded_file.name)
@@ -634,40 +686,68 @@ if st.session_state.logged_in:
             )
         card_close()
 
-    st.divider()
-    st.markdown("### 📜 Validation History")
+if (
+    st.session_state.get("selected_upload")
+    and not uploaded_file
+):
 
-    history = get_history(st.session_state.user_email)
+    selected_id = st.session_state.selected_upload
 
-    if history:
-        for row in history:
-            upload_id, upload_time, file_name, original_csv, cleaned_csv = row
+    history = get_history(
+        st.session_state.user_email
+    )
 
-            with st.expander(f"📁  {file_name}  ·  {upload_time}"):
-                st.caption(f"Upload ID: {upload_id}")
+    selected = None
 
-                issues = get_issues(upload_id)
+    for row in history:
 
-                if issues:
-                    st.markdown("**🚨 Issues Detected**")
-                    for issue in issues:
-                        st.markdown(
-                            f'<div class="issue-item">{issue[0]}</div>',
-                            unsafe_allow_html=True,
-                        )
+        if row[0] == selected_id:
+            selected = row
+            break
 
-                if original_csv:
-                    st.markdown("**📄 Original Dataset**")
-                    st.dataframe(
-                        pd.read_csv(StringIO(original_csv)),
-                        use_container_width=True
-                    )
+    if selected:
 
-                if cleaned_csv:
-                    st.markdown("**✅ Cleaned Dataset**")
-                    st.dataframe(
-                        pd.read_csv(StringIO(cleaned_csv)),
-                        use_container_width=True
-                    )
-    else:
-        st.info("No validation history yet. Upload a CSV to get started.")
+        upload_id = selected[0]
+        upload_time = selected[1]
+        file_name = selected[2]
+        original_csv = selected[3]
+        cleaned_csv = selected[4]
+
+        st.divider()
+
+        st.markdown(f"# 📄 {file_name}")
+
+        st.caption(f"Uploaded on {upload_time}")
+
+        # Original Dataset
+        if original_csv:
+            st.markdown("## 📄 Original Dataset")
+            st.dataframe(
+                pd.read_csv(StringIO(original_csv)),
+                use_container_width=True
+            )
+
+        # Issues
+        issues = get_issues(upload_id)
+
+        st.markdown("## 🚨 Issues & Fixes")
+
+        if issues:
+
+           for issue in issues:
+
+                st.error(issue[0])
+
+                st.code(
+                   generate_fix(issue[0]),
+                   language="python"
+        )
+        st.divider()
+        # Cleaned Dataset
+        if cleaned_csv:
+            st.markdown("## ✅ Cleaned Dataset")
+
+            st.dataframe(
+                pd.read_csv(StringIO(cleaned_csv)),
+                use_container_width=True
+            )

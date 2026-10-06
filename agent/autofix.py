@@ -2,76 +2,141 @@ import pandas as pd
 
 def auto_fix(df):
 
-    # Fix missing names
+    # =========================
+    # FIX NAME
+    # =========================
     if "name" in df.columns:
+
         df["name"] = (
             df["name"]
-            .fillna("Unknown")
-            .replace("", "Unknown")
+            .astype(str)
+            .replace(
+                ["None", "none", "NULL", "null", "", "nan"],
+                "Unknown"
+            )
         )
 
-    # Fix salary issues
+    # =========================
+    # FIX DEPARTMENT
+    # =========================
+    if "department" in df.columns:
+
+        df["department"] = (
+            df["department"]
+            .astype(str)
+            .str.strip()
+        )
+
+        df.loc[
+            df["department"].isin(
+                ["None", "none", "NULL", "null", "", "nan"]
+            ),
+            "department"
+        ] = "Unknown Department"
+
+    # =========================
+    # FIX JOINING DATE
+    # =========================
+    if "joining_date" in df.columns:
+
+        df["joining_date"] = (
+            df["joining_date"]
+            .astype(str)
+            .str.strip()
+        )
+
+        df.loc[
+            df["joining_date"].isin(
+                ["None", "none", "NULL", "null", "", "nan"]
+            ),
+            "joining_date"
+        ] = "Unknown"
+
+    # =========================
+    # FIX SALARY
+    # =========================
     if "salary" in df.columns:
-        df["salary"] = pd.to_numeric(
-            df["salary"],
-            errors="coerce"
-        ).fillna(0)
 
-        # Convert negative values to positive
-        df["salary"] = df["salary"].abs()
+        def fix_salary(x):
 
-    # Fix email issues
+            try:
+                value = float(x)
+
+                # negative -> positive
+                if value < 0:
+                    return abs(value)
+
+                # zero -> Unknown
+                if value == 0:
+                    return "Unknown"
+
+                return value
+
+            except:
+                # text/non-numeric -> Unknown
+                return "Unknown"
+
+        df["salary"] = df["salary"].apply(fix_salary)
+
+    # =========================
+    # FIX EMAIL
+    # =========================
     if "email" in df.columns:
 
         def fix_email(email):
 
-            email = str(email).strip()
+            email = str(email).strip().lower()
 
-            # Empty email
-            if email == "" or email.lower() == "nan":
+            if email in ["", "nan", "none", "null"]:
                 return "unknown@gmail.com"
 
-            # Missing @
             if "@" not in email:
-                email = email + "@gmail.com"
+
+                if "gmail.com" in email:
+                    username = email.replace(
+                        "gmail.com",
+                        ""
+                    ).rstrip(".")
+                    return f"{username}@gmail.com"
+
+                elif "yahoo.com" in email:
+                    username = email.replace(
+                        "yahoo.com",
+                        ""
+                    ).rstrip(".")
+                    return f"{username}@yahoo.com"
+
+                elif "hotmail.com" in email:
+                    username = email.replace(
+                        "hotmail.com",
+                        ""
+                    ).rstrip(".")
+                    return f"{username}@hotmail.com"
+
+                elif "outlook.com" in email:
+                    username = email.replace(
+                        "outlook.com",
+                        ""
+                    ).rstrip(".")
+                    return f"{username}@outlook.com"
+
+                return f"{email}@gmail.com"
 
             username, domain = email.split("@", 1)
 
-            # Missing domain
             if domain.strip() == "":
                 domain = "gmail.com"
 
-            # Missing extension
-            if "." not in domain:
+            elif "." not in domain:
                 domain += ".com"
 
             return f"{username}@{domain}"
 
-        # Apply email corrections
         df["email"] = df["email"].apply(fix_email)
 
-        # Make duplicate emails unique instead of deleting rows
-        email_counter = {}
-        unique_emails = []
-
-        for email in df["email"]:
-
-            if email not in email_counter:
-                email_counter[email] = 0
-                unique_emails.append(email)
-
-            else:
-                email_counter[email] += 1
-
-                username, domain = email.split("@", 1)
-
-                new_email = (
-                    f"{username}{email_counter[email]}"
-                    f"@{domain}"
-                )
-
-                unique_emails.append(new_email)
-
-        df["email"] = unique_emails
+        df = df.drop_duplicates(
+            subset=["email"],
+            keep="first"
+        )
 
     return df

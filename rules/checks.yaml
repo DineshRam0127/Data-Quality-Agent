@@ -6,8 +6,14 @@ checks:
   - column: email
     type: email
 
+  - column: email
+    type: unique
+
   - column: salary
     type: positive
 
-  - column: email
-    type: unique
+  - column: department
+    type: not_null
+
+  - column: joining_date
+    type: not_null
